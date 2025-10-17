@@ -73,8 +73,8 @@
     <div id="loading" class="loading">加载中...</div>
     <div id="map"></div>
 
-    <!-- 百度地图 API -->
-    <script src="https://api.map.baidu.com/api?v=3.0&ak={{BROWSER_AK}}"></script>
+    <!-- 百度地图 API (WebGL 版本) -->
+    <script src="https://api.map.baidu.com/api?v=1.0&type=webgl&ak={{BROWSER_AK}}"></script>
 
     <!-- 点聚合库（可选，如果酒店数量 >500 建议启用） -->
     <!-- <script src="https://api.map.baidu.com/library/TextIconOverlay/1.2/src/TextIconOverlay_min.js"></script> -->
@@ -100,23 +100,27 @@
                 loadingEl.remove();
 
                 // 创建地图
-                const map = new BMap.Map('map');
+                const map = new BMapGL.Map('map');
+                // 先设置默认中心点（中国中心）和缩放级别，确保地图瓦片开始加载
+                map.centerAndZoom(new BMapGL.Point(104.0, 35.0), 5);
+                // 显式设置为标准地图类型
+                map.setMapType(BMAP_NORMAL_MAP);
                 map.enableScrollWheelZoom(true);
 
                 // 添加地图控件
-                map.addControl(new BMap.NavigationControl());
-                map.addControl(new BMap.ScaleControl());
+                map.addControl(new BMapGL.NavigationControl());
+                map.addControl(new BMapGL.ScaleControl());
 
                 // 批量添加 Marker
                 const points = [];
                 const markers = [];
 
                 hotels.forEach((hotel, index) => {
-                    const point = new BMap.Point(hotel.lng, hotel.lat);
+                    const point = new BMapGL.Point(hotel.lng, hotel.lat);
                     points.push(point);
 
                     // 创建 Marker
-                    const marker = new BMap.Marker(point);
+                    const marker = new BMapGL.Marker(point);
                     markers.push(marker);
                     map.addOverlay(marker);
 
@@ -147,7 +151,7 @@
                         </div>
                     `;
 
-                    const infoWindow = new BMap.InfoWindow(infoContent, {
+                    const infoWindow = new BMapGL.InfoWindow(infoContent, {
                         width: 280,
                         height: 0,
                         title: `<div style="font-weight: bold;">${hotel.city}</div>`
@@ -179,7 +183,7 @@
                 // 取消下面的注释并在 <head> 中引入聚合库
                 /*
                 if (markers.length > 100) {
-                    new BMapLib.MarkerClusterer(map, { markers });
+                    new BMapGLLib.MarkerClusterer(map, { markers });
                 }
                 */
 
