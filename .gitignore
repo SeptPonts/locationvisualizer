@@ -16,5 +16,6 @@ wheels/
 .env
 
 # Project-specific files
+data/
 output/
 web/map.html
