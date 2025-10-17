@@ -15,13 +15,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def get_config(key: str) -> str:
+    """从环境变量获取配置，如果不存在则抛异常"""
+    value = os.getenv(key)
+    if value is None:
+        raise RuntimeError(
+            f"配置缺失: {key}\n请在 .env 文件中配置该项，参考 .env.example"
+        )
+    return value
+
+
 def render_map_template():
     """从模板生成最终的 map.html"""
-    # 获取配置
-    browser_ak = os.getenv("BAIDU_BROWSER_AK", "")
+    # 获取配置（不提供默认值，缺失直接 crash）
+    browser_ak = get_config("BAIDU_BROWSER_AK")
 
-    if not browser_ak or browser_ak == "YOUR_BROWSER_AK_HERE":
-        print("错误: 请先在 .env 中配置 BAIDU_BROWSER_AK")
+    # 验证不是占位符
+    if browser_ak == "YOUR_BROWSER_AK_HERE":
+        print("错误: 请先在 .env 中填写真实的 BAIDU_BROWSER_AK")
         print("申请地址: https://lbsyun.baidu.com/apiconsole/key")
         sys.exit(1)
 

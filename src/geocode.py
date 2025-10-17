@@ -20,17 +20,42 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_config(key: str, default: str = "") -> str:
-    """从环境变量获取配置，如果不存在则返回默认值"""
-    return os.getenv(key, default)
+def get_config(key: str) -> str:
+    """从环境变量获取配置，如果不存在则抛异常"""
+    value = os.getenv(key)
+    if value is None:
+        raise RuntimeError(
+            f"配置缺失: {key}\n请在 .env 文件中配置该项，参考 .env.example"
+        )
+    return value
 
 
 def validate_config():
-    """验证配置是否有效"""
-    ak = get_config("BAIDU_SERVER_AK")
-    if not ak or ak == "YOUR_SERVER_AK_HERE":
+    """验证所有必需配置是否存在"""
+    required_keys = [
+        "BAIDU_SERVER_AK",
+        "BAIDU_PLACE_API_BASE",
+        "REQUEST_DELAY",
+        "REQUEST_TIMEOUT",
+    ]
+
+    missing = []
+    for key in required_keys:
+        if not os.getenv(key):
+            missing.append(key)
+
+    if missing:
         raise RuntimeError(
-            "请先在 .env 中配置 BAIDU_SERVER_AK\n"
+            f"配置缺失: {', '.join(missing)}\n"
+            f"请在 .env 文件中配置，参考 .env.example\n"
+            f"申请地址: https://lbsyun.baidu.com/apiconsole/key"
+        )
+
+    # 验证 BAIDU_SERVER_AK 不是占位符
+    ak = os.getenv("BAIDU_SERVER_AK")
+    if ak == "YOUR_SERVER_AK_HERE":
+        raise RuntimeError(
+            "请先在 .env 中填写真实的 BAIDU_SERVER_AK\n"
             "申请地址: https://lbsyun.baidu.com/apiconsole/key"
         )
 
@@ -46,7 +71,7 @@ def search_hotel(name: str, city: str) -> dict:
     Returns:
         dict: 包含 uid/name/lng/lat/address 等字段，失败抛异常
     """
-    api_base = get_config("BAIDU_PLACE_API_BASE", "https://api.map.baidu.com/place/v3")
+    api_base = get_config("BAIDU_PLACE_API_BASE")
     url = f"{api_base}/region"
 
     params = {
@@ -60,7 +85,7 @@ def search_hotel(name: str, city: str) -> dict:
         "ak": get_config("BAIDU_SERVER_AK"),
     }
 
-    timeout = float(get_config("REQUEST_TIMEOUT", "10"))
+    timeout = float(get_config("REQUEST_TIMEOUT"))
 
     try:
         response = requests.get(url, params=params, timeout=timeout)
@@ -124,7 +149,7 @@ def process_csv(input_file: str, output_file: str):
     # 批量处理
     results = []
     failed = []
-    delay = float(get_config("REQUEST_DELAY", "0.1"))
+    delay = float(get_config("REQUEST_DELAY"))
 
     for i, row in enumerate(rows, 1):
         name = row.get("name", "").strip()
