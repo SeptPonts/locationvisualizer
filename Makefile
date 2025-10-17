@@ -29,6 +29,16 @@ geocode:
 render-map:
 	uv run python src/render_map.py
 
+.PHONY: split-image
+split-image:
+	@if [ -z "$(INPUT)" ]; then \
+		echo "Error: INPUT parameter is required"; \
+		echo "Usage: make split-image INPUT=<image_path> [OUTPUT=<output_dir>]"; \
+		echo "Example: make split-image INPUT=data/screenshot.jpeg OUTPUT=output"; \
+		exit 1; \
+	fi
+	uv run python src/split_long_image.py $(INPUT) $(if $(OUTPUT),$(OUTPUT),output)
+
 .PHONY: serve
 serve:
 	@echo "启动本地服务器..."
