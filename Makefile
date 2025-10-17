@@ -1,3 +1,4 @@
+# Dev env setup
 .PHONY: install
 install:
 	uv sync
@@ -19,9 +20,10 @@ lint:
 	uv run ruff check src/
 	@echo "Code formatting is correct!"
 
+# Running the project
 .PHONY: geocode
 geocode:
-	uv run python src/geocode.py data/hotels_sample.csv output/hotels.json
+	uv run python src/geocode.py data/hotels.csv output/hotels.json
 
 .PHONY: render-map
 render-map:

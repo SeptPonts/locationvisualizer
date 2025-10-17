@@ -168,7 +168,10 @@ def process_csv(input_file: str, output_file: str):
         print(f"[{i}/{len(rows)}] 检索: {name} ({city})...", end=" ")
 
         try:
-            result = search_hotel(name, city)
+            api_result = search_hotel(name, city)
+            # 从 CSV row 中排除 name 和 city，只保留自定义列
+            custom_fields = {k: v for k, v in row.items() if k not in ("name", "city")}
+            result = {**api_result, **custom_fields}  # API 数据在前，自定义数据在后
             results.append(result)
             print(f"✓ {result['lng']:.6f}, {result['lat']:.6f}")
 
