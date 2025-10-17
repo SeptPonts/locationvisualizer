@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒店位置地图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 9999;
+        }
+
+        .error {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 4px;
+            z-index: 9999;
+        }
+
+        .stats {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 999;
+        }
+
+        .stats h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stats .count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">加载中...</div>
+    <div id="map"></div>
+
+    <!-- 百度地图 API -->
+    <script src="https://api.map.baidu.com/api?v=3.0&ak={{BROWSER_AK}}"></script>
+
+    <!-- 点聚合库（可选，如果酒店数量 >500 建议启用） -->
+    <!-- <script src="https://api.map.baidu.com/library/TextIconOverlay/1.2/src/TextIconOverlay_min.js"></script> -->
+    <!-- <script src="https://api.map.baidu.com/library/MarkerClusterer/1.2/src/MarkerClusterer_min.js"></script> -->
+
+    <script>
+        (async () => {
+            const loadingEl = document.getElementById('loading');
+
+            try {
+                // 加载酒店数据
+                const response = await fetch('../output/hotels.json');
+                if (!response.ok) {
+                    throw new Error(`加载 hotels.json 失败: ${response.statusText}`);
+                }
+
+                const hotels = await response.json();
+                if (!hotels || hotels.length === 0) {
+                    throw new Error('hotels.json 为空，请先运行 make geocode 生成数据');
+                }
+
+                // 隐藏加载提示
+                loadingEl.remove();
+
+                // 创建地图
+                const map = new BMap.Map('map');
+                map.enableScrollWheelZoom(true);
+
+                // 添加地图控件
+                map.addControl(new BMap.NavigationControl());
+                map.addControl(new BMap.ScaleControl());
+
+                // 批量添加 Marker
+                const points = [];
+                const markers = [];
+
+                hotels.forEach((hotel, index) => {
+                    const point = new BMap.Point(hotel.lng, hotel.lat);
+                    points.push(point);
+
+                    // 创建 Marker
+                    const marker = new BMap.Marker(point);
+                    markers.push(marker);
+                    map.addOverlay(marker);
+
+                    // 构建 InfoWindow 内容
+                    const detail = hotel.detail_info || {};
+                    const rating = detail.overall_rating || '暂无评分';
+                    const price = detail.price || '';
+                    const telephone = hotel.telephone || '暂无电话';
+
+                    const infoContent = `
+                        <div style="padding: 10px; min-width: 260px;">
+                            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #333;">
+                                ${hotel.name}
+                            </h3>
+                            <p style="margin: 5px 0; font-size: 13px; color: #666;">
+                                <strong>地址:</strong> ${hotel.address || '暂无地址'}
+                            </p>
+                            <p style="margin: 5px 0; font-size: 13px; color: #666;">
+                                <strong>电话:</strong> ${telephone}
+                            </p>
+                            <p style="margin: 5px 0; font-size: 13px; color: #666;">
+                                <strong>评分:</strong> <span style="color: #ff9800;">${rating}</span>
+                                ${price ? `&nbsp;&nbsp;<strong>价格:</strong> ${price}` : ''}
+                            </p>
+                            <p style="margin: 5px 0; font-size: 12px; color: #999;">
+                                坐标: ${hotel.lng.toFixed(6)}, ${hotel.lat.toFixed(6)}
+                            </p>
+                        </div>
+                    `;
+
+                    const infoWindow = new BMap.InfoWindow(infoContent, {
+                        width: 280,
+                        height: 0,
+                        title: `<div style="font-weight: bold;">${hotel.city}</div>`
+                    });
+
+                    // 点击 Marker 显示 InfoWindow
+                    marker.addEventListener('click', () => {
+                        map.openInfoWindow(infoWindow, point);
+                    });
+                });
+
+                // 自动调整视野，让所有点都可见
+                if (points.length > 0) {
+                    map.setViewport(points, {
+                        margins: [80, 80, 80, 80]
+                    });
+                }
+
+                // 显示统计信息
+                const statsEl = document.createElement('div');
+                statsEl.className = 'stats';
+                statsEl.innerHTML = `
+                    <h3>酒店数量</h3>
+                    <div class="count">${hotels.length}</div>
+                `;
+                document.body.appendChild(statsEl);
+
+                // 可选：启用点聚合（如果酒店数量很多）
+                // 取消下面的注释并在 <head> 中引入聚合库
+                /*
+                if (markers.length > 100) {
+                    new BMapLib.MarkerClusterer(map, { markers });
+                }
+                */
+
+            } catch (error) {
+                loadingEl.remove();
+
+                const errorEl = document.createElement('div');
+                errorEl.className = 'error';
+                errorEl.textContent = `错误: ${error.message}`;
+                document.body.appendChild(errorEl);
+
+                console.error('地图加载失败:', error);
+            }
+        })();
+    </script>
+</body>
+</html>

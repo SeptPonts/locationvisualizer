@@ -1,3 +1,6 @@
+# macOS
+.DS_Store
+
 # Python-generated files
 __pycache__/
 .mypy_cache/
@@ -13,3 +16,5 @@ wheels/
 .env
 
 # Project-specific files
+output/
+web/map.html
