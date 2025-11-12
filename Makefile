@@ -4,10 +4,6 @@ install:
 	uv sync
 	uv run pre-commit install
 
-.PHONY: run
-run:
-	uv run python src/main.py
-
 .PHONY: format
 format:
 	uv run ruff format src/
