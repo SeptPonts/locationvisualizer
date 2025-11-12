@@ -127,7 +127,7 @@
                     // 构建 InfoWindow 内容
                     const detail = hotel.detail_info || {};
                     const rating = detail.overall_rating || '暂无评分';
-                    const price = detail.price || '';
+                    const price = hotel.price || '';
                     const telephone = hotel.telephone || '暂无电话';
 
                     const infoContent = `
@@ -143,7 +143,7 @@
                             </p>
                             <p style="margin: 5px 0; font-size: 13px; color: #666;">
                                 <strong>评分:</strong> <span style="color: #ff9800;">${rating}</span>
-                                ${price ? `&nbsp;&nbsp;<strong>价格:</strong> ${price}` : ''}
+                                ${price && price !== '未显示' ? `&nbsp;&nbsp;<strong>价格:</strong> <span style="color: #f50;">¥${price}</span>` : ''}
                             </p>
                             <p style="margin: 5px 0; font-size: 12px; color: #999;">
                                 坐标: ${hotel.lng.toFixed(6)}, ${hotel.lat.toFixed(6)}
